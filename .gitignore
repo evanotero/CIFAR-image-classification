@@ -105,4 +105,5 @@ venv.bak/
 
 # PROJECT SPECIFIC
 preprocessed_data/
-
+cifar-10-python.tar.gz
+cifar-10-batches-py

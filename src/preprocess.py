@@ -3,7 +3,7 @@ from sklearn import preprocessing
 import numpy as np
 import helper
 
-cifar10_dataset_folder_path = 'cifar-10-batches-py'
+cifar10_dataset_folder_path = '../cifar-10-batches-py'
 
 def normalize(x):
     """

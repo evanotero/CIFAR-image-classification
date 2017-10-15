@@ -7,14 +7,14 @@ from tqdm import tqdm
 import problem_unittests as tests
 import tarfile
 
-cifar10_dataset_folder_path = 'cifar-10-batches-py'
+cifar10_dataset_folder_path = '../cifar-10-batches-py'
 
 # Use Floyd's cifar-10 dataset if present
 floyd_cifar10_location = '/cifar/cifar-10-python.tar.gz'
 if isfile(floyd_cifar10_location):
     tar_gz_path = floyd_cifar10_location
 else:
-    tar_gz_path = 'cifar-10-python.tar.gz'
+    tar_gz_path = '../cifar-10-python.tar.gz'
 
 class DLProgress(tqdm):
     last_block = 0

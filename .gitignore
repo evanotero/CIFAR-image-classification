@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# PROJECT SPECIFIC
+preprocessed_data/
+

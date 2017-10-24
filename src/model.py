@@ -210,7 +210,7 @@ tests.test_train_nn(train_neural_network)
 
 # Tune Parameters
 epochs = 100
-batch_size = 128
+batch_size = 256
 keep_probability = 0.5
 
 

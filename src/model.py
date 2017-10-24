@@ -1,5 +1,10 @@
 import tensorflow as tf
 import problem_unittests as tests
+import helper
+import pickle
+
+# Load the Preprocessed Validation data
+valid_features, valid_labels = pickle.load(open('preprocess_validation.p', mode='rb'))
 
 def neural_net_image_input(image_shape):
     """
@@ -203,10 +208,10 @@ tests.test_conv_net(conv_net)
 tests.test_train_nn(train_neural_network)
 
 
-# # Tune Parameters
-# epochs = 100
-# batch_size = 128
-# keep_probability = 0.5
+# Tune Parameters
+epochs = 100
+batch_size = 128
+keep_probability = 0.5
 
 
 # print('Checking the Training on a Single Batch...')
@@ -221,3 +226,24 @@ tests.test_train_nn(train_neural_network)
 #             train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
 #         print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
 #         print_stats(sess, batch_features, batch_labels, cost, accuracy)
+
+save_model_path = './image_classification'
+
+print('Training...')
+with tf.Session() as sess:
+    # Initializing the variables
+    sess.run(tf.global_variables_initializer())
+    
+    # Training cycle
+    for epoch in range(epochs):
+        # Loop over all batches
+        n_batches = 5
+        for batch_i in range(1, n_batches + 1):
+            for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
+                train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
+            print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
+            print_stats(sess, batch_features, batch_labels, cost, accuracy)
+            
+    # Save Model
+    saver = tf.train.Saver()
+    save_path = saver.save(sess, save_model_path)

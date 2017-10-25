@@ -124,7 +124,7 @@ def conv_net(x, keep_prob):
     #    Set this to the number of classes
     # Function Definition from Above:
     #   output(x_tensor, num_outputs)
-    out= output(dropout4, 10)
+    out = output(dropout4, 10)
 
     # return output
     return out
@@ -225,28 +225,33 @@ def train_cnn_single_batch(epochs, batch_size, keep_probability):
             print_stats(sess, batch_features, batch_labels, cost, accuracy)
 
 def train_cnn_all_batches(epochs, batch_size, keep_probability):
-    save_model_path = '../image_classification'
+    save_model_path = '../model/image_classification'
 
     print('Training...')
-    with tf.Session() as sess:
-        # Initializing the variables
-        sess.run(tf.global_variables_initializer())
-        
-        # Training cycle
-        for epoch in range(epochs):
-            # Loop over all batches
-            n_batches = 5
-            for batch_i in range(1, n_batches + 1):
-                for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
-                    train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
-                print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
-                print_stats(sess, batch_features, batch_labels, cost, accuracy)
-                
-        # Save Model
-        saver = tf.train.Saver()
-        save_path = saver.save(sess, save_model_path)
+    sess = tf.InteractiveSession()
+
+    # Visualize graph
+    writer = tf.summary.FileWriter("../tmp/cifar/1")
+    writer.add_graph(sess.graph)
+
+    # Initializing the variables
+    sess.run(tf.global_variables_initializer())
+    
+    # Training cycle
+    for epoch in range(epochs):
+        # Loop over all batches
+        n_batches = 5
+        for batch_i in range(1, n_batches + 1):
+            for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
+                train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
+            print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
+            print_stats(sess, batch_features, batch_labels, cost, accuracy)
+            
+    # Save Model
+    saver = tf.train.Saver()
+    save_path = saver.save(sess, save_model_path)
 
 # test_implementation()
 build_cnn()
 # train_cnn_single_batch(10, 256, 0.5)
-train_cnn_all_batches(10, 256, 0.5)
+train_cnn_all_batches(20, 256, 0.5)

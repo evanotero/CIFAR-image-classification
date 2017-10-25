@@ -1,6 +1,3 @@
-%matplotlib inline
-%config InlineBackend.figure_format = 'retina'
-
 import tensorflow as tf
 import pickle
 import helper
@@ -13,7 +10,7 @@ try:
 except NameError:
     batch_size = 64
 
-save_model_path = './image_classification'
+save_model_path = '../model/image_classification'
 n_samples = 4
 top_n_predictions = 3
 

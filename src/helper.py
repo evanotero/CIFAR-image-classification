@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelBinarizer
 
+def pickle_file_path(filename):
+    return '../preprocessed-data/' + filename
 
 def _load_label_names():
     """
@@ -64,7 +66,7 @@ def _preprocess_and_save(normalize, one_hot_encode, features, labels, filename):
     features = normalize(features)
     labels = one_hot_encode(labels)
 
-    pickle.dump((features, labels), open(filename, 'wb'))
+    pickle.dump((features, labels), open(pickle_file_path(filename), 'wb'))
 
 
 def preprocess_and_save_data(cifar10_dataset_folder_path, normalize, one_hot_encode):
@@ -129,7 +131,7 @@ def load_preprocess_training_batch(batch_id, batch_size):
     Load the Preprocessed Training data and return them in batches of <batch_size> or less
     """
     filename = 'preprocess_batch_' + str(batch_id) + '.p'
-    features, labels = pickle.load(open(filename, mode='rb'))
+    features, labels = pickle.load(open(pickle_file_path(filename), mode='rb'))
 
     # Return the training data in batches of size <batch_size> or less
     return batch_features_labels(features, labels, batch_size)

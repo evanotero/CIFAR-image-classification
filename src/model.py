@@ -3,8 +3,6 @@ import problem_unittests as tests
 import helper
 import pickle
 
-# Load the Preprocessed Validation data
-valid_features, valid_labels = pickle.load(open('preprocess_validation.p', mode='rb'))
 
 def neural_net_image_input(image_shape):
     """
@@ -172,8 +170,11 @@ def print_stats(session, feature_batch, label_batch, cost, accuracy):
     : cost: TensorFlow cost function
     : accuracy: TensorFlow accuracy function
     """
-    loss = session.run(cost, feed_dict={x:feature_batch, y:label_batch, keep_prob:1.0})
-    valid_acc = sess.run(accuracy, feed_dict={x: valid_features,y: valid_labels,keep_prob: 1.})
+    # Load the Preprocessed Validation data
+    valid_features, valid_labels = pickle.load(open(helper.pickle_file_path('preprocess_validation.p'), mode='rb'))
+
+    loss = session.run(cost, feed_dict= {x:feature_batch, y:label_batch, keep_prob:1.0})
+    valid_acc = session.run(accuracy, feed_dict= {x:valid_features, y:valid_labels, keep_prob: 1.0})
     print(loss)
     print(valid_acc)
    # for batch, label in zip(feature_batch, label_batch):

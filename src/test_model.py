@@ -22,7 +22,7 @@ def test_model():
     Test the saved model against the test dataset
     """
 
-    test_features, test_labels = pickle.load(open('preprocess_test.p', mode='rb'))
+    test_features, test_labels = pickle.load(open(helper.pickle_file_path('preprocess_test.p'), mode='rb'))
     loaded_graph = tf.Graph()
 
     with tf.Session(graph=loaded_graph) as sess:

@@ -3,6 +3,7 @@ import problem_unittests as tests
 import helper
 import pickle
 
+x, y, keep_prob, cost, optimizer, accuracy = 0, 0, 0, 0, 0, 0
 
 def neural_net_image_input(image_shape):
     """
@@ -42,7 +43,7 @@ def conv2d_maxpool(x_tensor, conv_num_outputs, conv_ksize, conv_strides, pool_ks
     : return: A tensor that represents convolution and max pooling of x_tensor
     """
     # Create weight and bias
-    W = tf.Variable(tf.truncated_normal(list(conv_ksize)+[x_tensor.get_shape().as_list()[3], conv_num_outputs], stddev=0.1))
+    W = tf.Variable(tf.truncated_normal(list(conv_ksize) + [x_tensor.get_shape().as_list()[3], conv_num_outputs], stddev=0.1))
     b = tf.Variable(tf.constant(0.1, shape=[conv_num_outputs]))
 
     # Apply convolution and add bias
@@ -128,16 +129,6 @@ def conv_net(x, keep_prob):
     # return output
     return out
 
-def test_implementation():
-    tf.reset_default_graph()
-    tests.test_nn_image_inputs(neural_net_image_input)
-    tests.test_nn_label_inputs(neural_net_label_input)
-    tests.test_nn_keep_prob_inputs(neural_net_keep_prob_input)
-    tests.test_con_pool(conv2d_maxpool)
-    tests.test_flatten(flatten)
-    tests.test_fully_conn(fully_conn)
-    tests.test_output(output)
-
 def train_neural_network(session, optimizer, keep_probability, feature_batch, label_batch):
     """
     Optimize the session on a batch of images and labels
@@ -159,7 +150,7 @@ def train_neural_network(session, optimizer, keep_probability, feature_batch, la
         
         session.run(optimizer.minimize(cost))
     """
-    session.run(optimizer, feed_dict = {x:feature_batch, y:label_batch, keep_prob:keep_probability})
+    session.run(optimizer, feed_dict= {x:feature_batch, y:label_batch, keep_prob:keep_probability})
 
 def print_stats(session, feature_batch, label_batch, cost, accuracy):
     """
@@ -177,74 +168,85 @@ def print_stats(session, feature_batch, label_batch, cost, accuracy):
     valid_acc = session.run(accuracy, feed_dict= {x:valid_features, y:valid_labels, keep_prob: 1.0})
     print(loss)
     print(valid_acc)
-   # for batch, label in zip(feature_batch, label_batch):
 
+def test_implementation():
+    tf.reset_default_graph()
+    tests.test_nn_image_inputs(neural_net_image_input)
+    tests.test_nn_label_inputs(neural_net_label_input)
+    tests.test_nn_keep_prob_inputs(neural_net_keep_prob_input)
+    tests.test_con_pool(conv2d_maxpool)
+    tests.test_flatten(flatten)
+    tests.test_fully_conn(fully_conn)
+    tests.test_output(output)
 
-test_implementation()
+    build_cnn()
 
-# BUILD NN
-# Remove previous weights, bias, inputs, etc..
-tf.reset_default_graph()
+    tests.test_conv_net(conv_net)
+    tests.test_train_nn(train_neural_network)
 
-# Inputs
-x = neural_net_image_input((32, 32, 3))
-y = neural_net_label_input(10)
-keep_prob = neural_net_keep_prob_input()
+def build_cnn():
+    # Remove previous weights, bias, inputs, etc..
+    tf.reset_default_graph()
 
-# Model
-logits = conv_net(x, keep_prob)
+    # Inputs
+    global x, y, keep_prob
+    x = neural_net_image_input((32, 32, 3))
+    y = neural_net_label_input(10)
+    keep_prob = neural_net_keep_prob_input()
 
-# Name logits Tensor, so that is can be loaded from disk after training
-logits = tf.identity(logits, name='logits')
+    # Model
+    logits = conv_net(x, keep_prob)
 
-# Loss and Optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
-optimizer = tf.train.AdamOptimizer().minimize(cost)
+    # Name logits Tensor, so that is can be loaded from disk after training
+    logits = tf.identity(logits, name='logits')
 
-# Accuracy
-correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name='accuracy')
+    # Loss and Optimizer
+    global cost, optimizer
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
+    optimizer = tf.train.AdamOptimizer().minimize(cost)
 
-tests.test_conv_net(conv_net)
-tests.test_train_nn(train_neural_network)
+    # Accuracy
+    global accuracy
+    correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32), name='accuracy')
 
+def train_cnn_single_batch(epochs, batch_size, keep_probability):
+    print('Checking the Training on a Single Batch...')
+    with tf.Session() as sess:
+        # Initializing the variables
+        sess.run(tf.global_variables_initializer())
 
-# Tune Parameters
-epochs = 100
-batch_size = 256
-keep_probability = 0.5
-
-
-# print('Checking the Training on a Single Batch...')
-# with tf.Session() as sess:
-#     # Initializing the variables
-#     sess.run(tf.global_variables_initializer())
-
-#     # Training cycle
-#     for epoch in range(epochs):
-#         batch_i = 1
-#         for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
-#             train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
-#         print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
-#         print_stats(sess, batch_features, batch_labels, cost, accuracy)
-
-save_model_path = './image_classification'
-
-print('Training...')
-with tf.Session() as sess:
-    # Initializing the variables
-    sess.run(tf.global_variables_initializer())
-    
-    # Training cycle
-    for epoch in range(epochs):
-        # Loop over all batches
-        n_batches = 5
-        for batch_i in range(1, n_batches + 1):
+        # Training cycle
+        for epoch in range(epochs):
+            batch_i = 1
             for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
                 train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
             print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
             print_stats(sess, batch_features, batch_labels, cost, accuracy)
-            
-    # Save Model
-    saver = tf.train.Saver()
-    save_path = saver.save(sess, save_model_path)
+
+def train_cnn_all_batches(epochs, batch_size, keep_probability):
+    save_model_path = '../image_classification'
+
+    print('Training...')
+    with tf.Session() as sess:
+        # Initializing the variables
+        sess.run(tf.global_variables_initializer())
+        
+        # Training cycle
+        for epoch in range(epochs):
+            # Loop over all batches
+            n_batches = 5
+            for batch_i in range(1, n_batches + 1):
+                for batch_features, batch_labels in helper.load_preprocess_training_batch(batch_i, batch_size):
+                    train_neural_network(sess, optimizer, keep_probability, batch_features, batch_labels)
+                print('Epoch {:>2}, CIFAR-10 Batch {}:  '.format(epoch + 1, batch_i), end='')
+                print_stats(sess, batch_features, batch_labels, cost, accuracy)
+                
+        # Save Model
+        saver = tf.train.Saver()
+        save_path = saver.save(sess, save_model_path)
+
+# test_implementation()
+build_cnn()
+# train_cnn_single_batch(10, 256, 0.5)
+train_cnn_all_batches(10, 256, 0.5)

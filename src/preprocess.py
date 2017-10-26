@@ -11,22 +11,10 @@ def normalize(x):
     : x: List of image data.  The image shape is (32, 32, 3)
     : return: Numpy array of normalize data
     """
-    x_out = []
-    for image in x:
-        min_max_scaler = preprocessing.MaxAbsScaler()
+    newMax = 1
+    newMin = 0
 
-        dim_1 = min_max_scaler.fit_transform(image[:, :, 0])
-        dim_2 = min_max_scaler.fit_transform(image[:, :, 1])
-        dim_3 = min_max_scaler.fit_transform(image[:, :, 2])
-
-        new_image = np.zeros((32, 32, 3))
-        new_image[:, :, 0] = dim_1
-        new_image[:, :, 1] = dim_2
-        new_image[:, :, 2] = dim_3
-
-        x_out.append(new_image)
-
-    return np.array(x_out)
+    return (x-newMin) *(float(newMax - newMin))/(255-0) + newMin
 
 def one_hot_encode(x):
     """

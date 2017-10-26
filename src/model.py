@@ -64,8 +64,15 @@ def conv2d_maxpool(x_tensor, conv_num_outputs, conv_ksize, conv_strides, pool_ks
 
 
 def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name = "conv"):
+    """Apply convolution to x_tensor
+    @param x_tensor: Tensorflow Tensor 
+    :param conv_num_outputs: Number of outputs for the convolutional layer
+    :param conv_ksize: kernal size 2-D Tuple for the convolutional layer
+    :param conv_strides: Stride 2-D Tuple for convolution
+    :param pool_ksize: kernal size 2-D Tuple for pool
+    return tensor after convolution
+    """
     with tf.name_scope(name):
-
         # Create weight and bias
         with tf.name_scope("weights"):
             W = tf.Variable(tf.truncated_normal(list(conv_ksize) + [x_tensor.get_shape().as_list()[3], conv_num_outputs], stddev=0.1))
@@ -73,10 +80,12 @@ def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name = "conv"):
         with tf.name_scope("biases"):
             b = tf.Variable(tf.constant(0.1, shape=[conv_num_outputs]))
             variable_summaries(b)
+
         # Apply convolution and add bias
         with tf.name_scope('Wx_plus_b'):
             conv = tf.nn.conv2d(x_tensor, W, strides=[1] + list(conv_strides) + [1], padding='SAME') + b
             tf.summary.histogram('pre_activations', conv)
+        
         # Apply ReLu activation function
         conv = tf.nn.relu(conv, name='activation')
         tf.summary.histogram('activations', conv)
@@ -84,11 +93,18 @@ def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name = "conv"):
         return conv
 
 def pool2d(x_tensor, pool_ksize, pool_strides, name = "pool"):
+    """
+    :param pool_ksize: kernal size 2-D Tuple for pool
+    :param pool_strides: Stride 2-D Tuple for pool
+    return tensor after pool 
+    """
     with tf.name_scope(name):
         return tf.nn.max_pool(x_tensor,
                 ksize = [1] + list(pool_ksize) + [1],
                 strides = [1] + list(pool_strides) + [1], 
                 padding = 'SAME') 
+
+
 def flatten(x_tensor):
     """
     Flatten x_tensor to (Batch Size, Flattened Image Size)
@@ -135,9 +151,9 @@ def conv_net(x, keep_prob):
     #    conv2d_maxpool(x_tensor, conv_num_outputs, conv_ksize, conv_strides, pool_ksize, pool_strides)
     tf.summary.image('input', x)
 
-    convpool1 = conv2d_maxpool(x, 8, (5, 5), (1, 1), (3, 3), (2, 2), "conv1")
+    convpool1 = conv2d_maxpool(x, 16, (3, 3), (1, 1), (3, 3), (2, 2), "conv1")
     
-    convpool2 = conv2d_maxpool(convpool1, 64, (3, 3), (1, 1), (3, 3), (2, 2), "conv2")
+    convpool2 = conv2d_maxpool(convpool1, 64, (5, 5), (1, 1), (3, 3), (2, 2), "conv2")
     
     dropout1 = tf.nn.dropout(convpool2, keep_prob, name="dropout1")
     

@@ -86,9 +86,6 @@ def conv2d(x_tensor, conv_num_outputs, conv_ksize, conv_strides, name = "conv"):
             conv = tf.nn.conv2d(x_tensor, W, strides=[1] + list(conv_strides) + [1], padding='SAME') + b
             tf.summary.histogram('pre_activations', conv)
         
-        # Apply ReLu activation function
-        conv = tf.nn.relu(conv, name='activation')
-        tf.summary.histogram('activations', conv)
 
         return conv
 
@@ -137,6 +134,45 @@ def output(x_tensor, num_outputs, name="output"):
     """
     with tf.name_scope(name):
         return tf.layers.dense(x_tensor, num_outputs)
+
+
+def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_cut = False):
+
+    shortcut = x_tensor
+
+
+    """bottleneck desgin: 1x1 3x3 1x1 conv"""
+    x_tensor = conv2d(x_tensor, bottleneck_d, (1, 1), (1, 1))
+    x_tensor = tf.layers.batch_normalization(x_tensor) 
+    x_tensor = tf.nn.relu(x_tensor)
+    
+    x_tensor = conv2d(x_tensor, bottleneck_d, (3, 3), _strides) 
+    x_tensor = tf.layers.batch_normalization(x_tensor) 
+    x_tensor = tf.nn.relu(x_tensor)
+
+    x_tensor = conv2d(x_tensor, num_outputs, (1, 1), (1, 1))
+    x_tensor = tf.layers.batch_normalization(x_tensor)
+
+    if short_cut or _strides != (1, 1):
+
+        shortcut = conv2d(shortcut, num_outputs, (1, 1) _strides)
+        x_tensor = tf.layers.batch_normalization(x_tensor)
+    
+
+    x_tensor =  shortcut + x_tensor 
+    x_tensor = tf.nn.relu(x_tensor)
+    return x_tensor 
+
+def resNet(x):
+
+    x = conv2d(x, 64, (7, 7), (2, 2))
+    x = tf.layers.batch_normalization(x)
+    x = tf.nn.relu(x)
+    
+    x = tf.nn.max_pool(x, ksize=[1, 3, 3, 1], strides= [1, 2, 2, 1], padding='SAME')
+
+    resNet_block(
+
 
 def conv_net(x, keep_prob):
     """

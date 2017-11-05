@@ -142,11 +142,11 @@ def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_c
 
 
     """bottleneck desgin: 1x1 3x3 1x1 conv"""
-    x_tensor = conv2d(x_tensor, bottleneck_d, (1, 1), (1, 1))
+    x_tensor = conv2d(x_tensor, bottleneck_d, (1, 1), _strides)
     x_tensor = tf.layers.batch_normalization(x_tensor) 
     x_tensor = tf.nn.relu(x_tensor)
     
-    x_tensor = conv2d(x_tensor, bottleneck_d, (3, 3), _strides) 
+    x_tensor = conv2d(x_tensor, bottleneck_d, (3, 3), (1, 1)) 
     x_tensor = tf.layers.batch_normalization(x_tensor) 
     x_tensor = tf.nn.relu(x_tensor)
 
@@ -155,23 +155,55 @@ def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_c
 
     if short_cut or _strides != (1, 1):
 
-        shortcut = conv2d(shortcut, num_outputs, (1, 1) _strides)
+        shortcut = conv2d(shortcut, num_outputs, (1, 1), _strides)
         x_tensor = tf.layers.batch_normalization(x_tensor)
     
 
-    x_tensor =  shortcut + x_tensor 
+    x_tensor =  tf.add(x_tensor, shortcut)
+    
     x_tensor = tf.nn.relu(x_tensor)
+    
+    print (x_tensor)
     return x_tensor 
 
-def resNet(x):
+def resNet(image, resNet_block):
 
-    x = conv2d(x, 64, (7, 7), (2, 2))
-    x = tf.layers.batch_normalization(x)
-    x = tf.nn.relu(x)
+    image = conv2d(image, 64, (7, 7), (2, 2))
+    image = tf.layers.batch_normalization(image)
+    image = tf.nn.relu(image)
     
-    x = tf.nn.max_pool(x, ksize=[1, 3, 3, 1], strides= [1, 2, 2, 1], padding='SAME')
+    image = tf.nn.max_pool(image, ksize=[1, 3, 3, 1], strides= [1, 2, 2, 1], padding='SAME')
 
-    resNet_block(
+
+    image = resNet_block(image, 64, 128, short_cut = True)
+    for i in range (2):
+        image = resNet_block(image, 64, 128)
+    
+    image = resNet_block(image, 128, 512, _strides = (2, 2))
+
+    for i in range(3):
+        image = resNet_block (image, 128, 512)
+
+    
+    image = resNet_block(image, 256, 1024, _strides = (2, 2))
+
+    for i in range(5):
+        image = resNet_block(image, 256, 1024)
+
+    image = resNet_block(image, 1024, 2048, _strides = (2, 2))
+
+    for i in range(2):
+       image = resNet_block(image, 1024, 2048)
+    
+    image = pool2d(image, (7, 7), (1, 1))
+    
+    
+    image = flatten(image)
+    
+    image = fully_conn(image, 10)    
+    
+    print (image)
+    return image
 
 
 def conv_net(x, keep_prob):
@@ -285,8 +317,8 @@ def build_cnn():
     keep_prob = neural_net_keep_prob_input()
 
     # Model
-    logits = conv_net(x, keep_prob)
-
+    logits = resNet(x, resNet_block)
+    
     # Name logits Tensor, so that is can be loaded from disk after training
     logits = tf.identity(logits, name='logits')
 
@@ -359,5 +391,5 @@ def train_cnn_all_batches(epochs, batch_size, keep_probability):
 
 # test_implementation()
 build_cnn()
-# train_cnn_single_batch(10, 256, 0.5)
+#train_cnn_single_batch(10, 256, 0.5)
 train_cnn_all_batches(20, 256, 0.5)

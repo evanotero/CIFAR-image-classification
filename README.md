@@ -6,6 +6,9 @@ Evan Otero & Shikun (Jason) Wang
 Classifying images from the [CIFAR-10 dataset](https://www.cs.toronto.edu/~kriz/cifar.html) using a convolutional neural network.  The images need to be normalized and the labels need to be one-hot encoded.  The project will require building a convolutional, max pooling, dropout, and fully connected layers. At the end, we will see our neural network's predictions on the sample images.
 
 ## Network Graph
+#ResNet Model
+#[ResNet-50] (http://ethereon.github.io/netscope/#/gist/db945b393d40bfa26006)
+
 ![Graph](https://github.com/evanotero/CIFAR-image-classification/blob/master/assets/network_graph.png)
 
 ## Summary Data

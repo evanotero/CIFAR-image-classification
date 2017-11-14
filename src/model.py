@@ -136,36 +136,36 @@ def output(x_tensor, num_outputs, name="output"):
         return tf.layers.dense(x_tensor, num_outputs)
 
 
-def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_cut = False):
+def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_cut = False, name = "conv"):
 
-    shortcut = x_tensor
+    with tf.name_scope(name):
+        shortcut = x_tensor
 
+        """bottleneck desgin: 1x1 3x3 1x1 conv"""
+        x_tensor = conv2d(x_tensor, bottleneck_d, (1, 1), _strides)
+        x_tensor = tf.layers.batch_normalization(x_tensor) 
+        x_tensor = tf.nn.relu(x_tensor)
+        
+        x_tensor = conv2d(x_tensor, bottleneck_d, (3, 3), (1, 1)) 
+        x_tensor = tf.layers.batch_normalization(x_tensor) 
+        x_tensor = tf.nn.relu(x_tensor)
 
-    """bottleneck desgin: 1x1 3x3 1x1 conv"""
-    x_tensor = conv2d(x_tensor, bottleneck_d, (1, 1), _strides)
-    x_tensor = tf.layers.batch_normalization(x_tensor) 
-    x_tensor = tf.nn.relu(x_tensor)
-    
-    x_tensor = conv2d(x_tensor, bottleneck_d, (3, 3), (1, 1)) 
-    x_tensor = tf.layers.batch_normalization(x_tensor) 
-    x_tensor = tf.nn.relu(x_tensor)
-
-    x_tensor = conv2d(x_tensor, num_outputs, (1, 1), (1, 1))
-    x_tensor = tf.layers.batch_normalization(x_tensor)
-
-    if short_cut or _strides != (1, 1):
-
-        shortcut = conv2d(shortcut, num_outputs, (1, 1), _strides)
+        x_tensor = conv2d(x_tensor, num_outputs, (1, 1), (1, 1))
         x_tensor = tf.layers.batch_normalization(x_tensor)
-    
 
-    x_tensor =  tf.add(x_tensor, shortcut)
-    
-    x_tensor = tf.nn.relu(x_tensor)
-    
-    print (x_tensor)
-    return x_tensor 
+        if short_cut or _strides != (1, 1):
+            shortcut = conv2d(shortcut, num_outputs, (1, 1), _strides)
+            x_tensor = tf.layers.batch_normalization(x_tensor)
+        
+        # Identity
+        x_tensor =  tf.add(x_tensor, shortcut)
+        
+        x_tensor = tf.nn.relu(x_tensor)
+        
+        print (x_tensor)
+        return x_tensor 
 
+# https://arxiv.org/pdf/1512.03385.pdf
 def resNet(image, resNet_block):
 
     image = conv2d(image, 64, (7, 7), (2, 2))
@@ -174,26 +174,29 @@ def resNet(image, resNet_block):
     
     image = tf.nn.max_pool(image, ksize=[1, 3, 3, 1], strides= [1, 2, 2, 1], padding='SAME')
 
+    # Counter
+    block_num = 1
 
-    image = resNet_block(image, 64, 128, short_cut = True)
+    image = resNet_block(image, 16, 32, short_cut = True, name="resNet_block"+str(block_num))
     for i in range (2):
-        image = resNet_block(image, 64, 128)
+        block_num += 1
+        image = resNet_block(image, 16, 32, name="resNet_block"+str(block_num))
     
-    image = resNet_block(image, 128, 512, _strides = (2, 2))
+    image = resNet_block(image, 32, 64, _strides = (2, 2))
 
     for i in range(3):
-        image = resNet_block (image, 128, 512)
+        image = resNet_block (image, 32, 64)
 
     
-    image = resNet_block(image, 256, 1024, _strides = (2, 2))
+    image = resNet_block(image, 64, 128, _strides = (2, 2))
 
     for i in range(5):
-        image = resNet_block(image, 256, 1024)
+        image = resNet_block(image, 64, 128)
 
-    image = resNet_block(image, 1024, 2048, _strides = (2, 2))
+    image = resNet_block(image, 128, 256, _strides = (2, 2))
 
     for i in range(2):
-       image = resNet_block(image, 1024, 2048)
+       image = resNet_block(image, 128, 256)
     
     image = pool2d(image, (7, 7), (1, 1))
     
@@ -364,8 +367,8 @@ def train_cnn_all_batches(epochs, batch_size, keep_probability):
 
     # Visualize graph and merge all the summaries
     merged = tf.summary.merge_all()
-    train_writer = tf.summary.FileWriter('../tmp/cifar/2' + '/train', sess.graph)
-    test_writer = tf.summary.FileWriter('../tmp/cifar/2' + '/test')
+    train_writer = tf.summary.FileWriter('../tmp/cifar/5' + '/train', sess.graph)
+    test_writer = tf.summary.FileWriter('../tmp/cifar/5' + '/test')
 
     # Initializing the variables
     sess.run(tf.global_variables_initializer())

@@ -177,27 +177,27 @@ def resNet(image, resNet_block):
     # Counter
     block_num = 1
 
-    image = resNet_block(image, 16, 32, short_cut = True, name="resNet_block"+str(block_num))
+    image = resNet_block(image, 8, 16, short_cut = True, name="resNet_block"+str(block_num))
     for i in range (2):
         block_num += 1
-        image = resNet_block(image, 16, 32, name="resNet_block"+str(block_num))
+        image = resNet_block(image, 8, 16, name="resNet_block"+str(block_num))
+    
+    image = resNet_block(image, 16, 32, _strides = (2, 2))
+
+    for i in range(3):
+        image = resNet_block (image, 16, 32)
+
     
     image = resNet_block(image, 32, 64, _strides = (2, 2))
 
-    for i in range(3):
-        image = resNet_block (image, 32, 64)
-
-    
-    image = resNet_block(image, 64, 128, _strides = (2, 2))
-
     for i in range(5):
-        image = resNet_block(image, 64, 128)
-
+        image = resNet_block(image, 32, 64)
+    '''
     image = resNet_block(image, 128, 256, _strides = (2, 2))
 
     for i in range(2):
        image = resNet_block(image, 128, 256)
-    
+    '''
     image = pool2d(image, (7, 7), (1, 1))
     
     

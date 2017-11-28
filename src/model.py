@@ -101,6 +101,18 @@ def pool2d(x_tensor, pool_ksize, pool_strides, name = "pool"):
                 strides = [1] + list(pool_strides) + [1], 
                 padding = 'SAME') 
 
+def avg_pool2d(x_tensor, pool_ksize, pool_strides, name = "pool"):
+    """
+    :param pool_ksize: kernal size 2-D Tuple for pool
+    :param pool_strides: Stride 2-D Tuple for pool
+    return tensor after pool 
+    """
+    with tf.name_scope(name):
+        return tf.nn.avg_pool(x_tensor,
+                ksize = [1] + list(pool_ksize) + [1],
+                strides = [1] + list(pool_strides) + [1], 
+                padding = 'SAME') 
+
 
 def flatten(x_tensor):
     """
@@ -136,17 +148,17 @@ def output(x_tensor, num_outputs, name="output"):
         return tf.layers.dense(x_tensor, num_outputs)
 
 
-def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_cut = False, name = "conv"):
+def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_cut = False, name = "resNet_block"):
 
     with tf.name_scope(name):
         shortcut = x_tensor
 
         """bottleneck desgin: 1x1 3x3 1x1 conv"""
-        x_tensor = conv2d(x_tensor, bottleneck_d, (1, 1), _strides)
+        x_tensor = conv2d(x_tensor, bottleneck_d, (1, 1), (1, 1))
         x_tensor = tf.layers.batch_normalization(x_tensor) 
         x_tensor = tf.nn.relu(x_tensor)
         
-        x_tensor = conv2d(x_tensor, bottleneck_d, (3, 3), (1, 1)) 
+        x_tensor = conv2d(x_tensor, bottleneck_d, (3, 3), _strides) 
         x_tensor = tf.layers.batch_normalization(x_tensor) 
         x_tensor = tf.nn.relu(x_tensor)
 
@@ -167,44 +179,59 @@ def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_c
 
 # https://arxiv.org/pdf/1512.03385.pdf
 def resNet(image, resNet_block):
+    tf.summary.image('input', image)
 
-    image = conv2d(image, 64, (7, 7), (2, 2))
-    image = tf.layers.batch_normalization(image)
-    image = tf.nn.relu(image)
+    # Conv1
+    with tf.variable_scope("conv1"):
+        image = conv2d(image, 16, (3, 3), (1, 1))
+        image = tf.layers.batch_normalization(image)
+        image = tf.nn.relu(image)
     
-    image = tf.nn.max_pool(image, ksize=[1, 3, 3, 1], strides= [1, 2, 2, 1], padding='SAME')
+    # Conv2
+    for i in range (9):
+        with tf.variable_scope("conv2_%d" % (i + 1)):
+            if i == 0:
+                # image = tf.nn.max_pool(image, ksize=[1, 3, 3, 1], strides= [1, 2, 2, 1], padding='SAME')
+                image = resNet_block(image, 16, 64, short_cut = True)
+            else:
+                image = resNet_block(image, 16, 64)
 
-    # Counter
-    block_num = 1
-
-    image = resNet_block(image, 16, 32, short_cut = True, name="resNet_block"+str(block_num))
-    for i in range (2):
-        block_num += 1
-        image = resNet_block(image, 16, 32, name="resNet_block"+str(block_num))
+    # Conv3
+    for i in range(9):
+        with tf.variable_scope("conv3_%d" % (i + 1)):
+            if i == 0:
+                image = resNet_block(image, 32, 128, _strides = (2, 2))
+            else:
+                image = resNet_block(image, 32, 128)
     
-    image = resNet_block(image, 32, 64, _strides = (2, 2))
-
+    # Conv4
+    for i in range(9):
+        with tf.variable_scope("conv4_%d" % (i + 1)):
+            if i == 0:
+                image = resNet_block(image, 64, 256, _strides = (2, 2))
+            else:
+                image = resNet_block(image, 64, 256)
+    """
+    # Conv5
     for i in range(3):
-        image = resNet_block (image, 32, 64)
-
+        with tf.variable_scope("conv5_%d" % (i + 1)):
+            if i == 0:
+                image = resNet_block(image, 128, 256, _strides = (2, 2))
+            else:
+                image = resNet_block(image, 128, 256)
+    """
     
-    image = resNet_block(image, 64, 128, _strides = (2, 2))
-
-    for i in range(5):
-        image = resNet_block(image, 64, 128)
-
-    image = resNet_block(image, 128, 256, _strides = (2, 2))
-
-    for i in range(2):
-       image = resNet_block(image, 128, 256)
+    # Avg Pool
+    # image = tf.layers.batch_normalization(image)
+    # image = tf.nn.relu(image)
+    image = avg_pool2d(image, (8, 8), (1, 1))
     
-    image = pool2d(image, (7, 7), (1, 1))
-    
-    
+    # Reshape
     image = flatten(image)
-    
-    image = fully_conn(image, 10)    
-    
+
+    # FC
+    image = fully_conn(image, 10)
+
     print (image)
     return image
 
@@ -367,8 +394,8 @@ def train_cnn_all_batches(epochs, batch_size, keep_probability):
 
     # Visualize graph and merge all the summaries
     merged = tf.summary.merge_all()
-    train_writer = tf.summary.FileWriter('../tmp/cifar/5' + '/train', sess.graph)
-    test_writer = tf.summary.FileWriter('../tmp/cifar/5' + '/test')
+    train_writer = tf.summary.FileWriter('../tmp/cifar/15' + '/train', sess.graph)
+    test_writer = tf.summary.FileWriter('../tmp/cifar/15' + '/test')
 
     # Initializing the variables
     sess.run(tf.global_variables_initializer())

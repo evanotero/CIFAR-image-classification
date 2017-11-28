@@ -235,6 +235,66 @@ def resNet(image, resNet_block):
     print (image)
     return image
 
+def vgg_net(x, keep_prob):
+    
+    tf.summary.image('input', x)
+    x = conv2d(x, 16, (3, 3), (1, 1))
+    x = tf.layers.batch_normalization(x)
+    x = tf.nn.relu(x)
+    x = pool2d(x, (2, 2), (2, 2))
+    x= tf.nn.dropout(x, keep_prob, name="dropout1")
+
+    x = conv2d(x, 32, (3, 3), (1, 1))
+    x = tf.layers.batch_normalization(x)
+    x = tf.nn.relu(x)
+    x = pool2d(x, (2, 2), (2, 2))
+    x = tf.nn.dropout(x, keep_prob, name="dropout1")
+
+    x = conv2d(x, 64, (3, 3), (1, 1))
+    x = tf.layers.batch_normalization(x)
+    x = tf.nn.relu(x)
+    x= tf.nn.dropout(x, keep_prob, name="dropout1")
+
+    x = conv2d(x, 64, (3, 3), (1, 1))
+    x = tf.layers.batch_normalization(x)
+    x = tf.nn.relu(x)
+    x= tf.nn.dropout(x, keep_prob, name="dropout1")
+
+    x = conv2d(x, 128, (3, 3), (1, 1))
+    x = tf.layers.batch_normalization(x)
+    x = tf.nn.relu(x)
+    x = tf.nn.dropout(x, keep_prob, name="dropout1")
+
+    x = conv2d(x, 128, (3, 3), (1, 1))
+    x = tf.layers.batch_normalization(x)
+    x = tf.nn.relu(x)
+    x = tf.nn.dropout(x, keep_prob, name="dropout1")
+
+
+    # Apply a Flatten Layer
+    # Function Definition from Above:
+    #   flatten(x_tensor)
+    flatten1 = flatten(dropout1)
+    
+    # Apply 1, 2, or 3 Fully Connected Layers
+    #    Play around with different number of outputs
+    # Function Definition from Above:
+    #   fully_conn(x_tensor, num_outputs)
+    fc1 = fully_conn(flatten1, 256, "fc1")
+
+    dropout2 = tf.nn.dropout(fc1, keep_prob, name="dropout2")
+
+    fc2 = fully_conn(dropout2, 256, "fc2")
+
+    dropout3 = tf.nn.dropout(fc2, keep_prob, name="dropout3")
+    
+    # Apply an Output Layer
+    #    Set this to the number of classes
+    # Function Definition from Above:
+    #   output(x_tensor, num_outputs)
+    return output(dropout3, 10)
+
+
 
 def conv_net(x, keep_prob):
     """

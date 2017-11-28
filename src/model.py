@@ -236,45 +236,50 @@ def resNet(image, resNet_block):
     return image
 
 def vgg_net(x, keep_prob):
-    
     tf.summary.image('input', x)
-    x = conv2d(x, 16, (3, 3), (1, 1))
-    x = tf.layers.batch_normalization(x)
-    x = tf.nn.relu(x)
-    x = pool2d(x, (2, 2), (2, 2))
-    x= tf.nn.dropout(x, keep_prob, name="dropout1")
 
-    x = conv2d(x, 32, (3, 3), (1, 1))
-    x = tf.layers.batch_normalization(x)
-    x = tf.nn.relu(x)
-    x = pool2d(x, (2, 2), (2, 2))
-    x = tf.nn.dropout(x, keep_prob, name="dropout1")
+    with tf.variable_scope("conv1"):
+        x = conv2d(x, 16, (3, 3), (1, 1))
+        x = tf.layers.batch_normalization(x)
+        x = tf.nn.relu(x)
+        x = pool2d(x, (2, 2), (2, 2))
+        x = tf.nn.dropout(x, keep_prob, name="dropout1")
 
-    x = conv2d(x, 64, (3, 3), (1, 1))
-    x = tf.layers.batch_normalization(x)
-    x = tf.nn.relu(x)
-    x= tf.nn.dropout(x, keep_prob, name="dropout1")
+    with tf.variable_scope("conv2"):
+        x = conv2d(x, 32, (3, 3), (1, 1))
+        x = tf.layers.batch_normalization(x)
+        x = tf.nn.relu(x)
+        x = pool2d(x, (2, 2), (2, 2))
+        x = tf.nn.dropout(x, keep_prob, name="dropout1")
 
-    x = conv2d(x, 64, (3, 3), (1, 1))
-    x = tf.layers.batch_normalization(x)
-    x = tf.nn.relu(x)
-    x= tf.nn.dropout(x, keep_prob, name="dropout1")
+    with tf.variable_scope("conv3"):
+        x = conv2d(x, 64, (3, 3), (1, 1))
+        x = tf.layers.batch_normalization(x)
+        x = tf.nn.relu(x)
+        x = tf.nn.dropout(x, keep_prob, name="dropout1")
 
-    x = conv2d(x, 128, (3, 3), (1, 1))
-    x = tf.layers.batch_normalization(x)
-    x = tf.nn.relu(x)
-    x = tf.nn.dropout(x, keep_prob, name="dropout1")
+    with tf.variable_scope("conv4"):
+        x = conv2d(x, 64, (3, 3), (1, 1))
+        x = tf.layers.batch_normalization(x)
+        x = tf.nn.relu(x)
+        x = tf.nn.dropout(x, keep_prob, name="dropout1")
 
-    x = conv2d(x, 128, (3, 3), (1, 1))
-    x = tf.layers.batch_normalization(x)
-    x = tf.nn.relu(x)
-    x = tf.nn.dropout(x, keep_prob, name="dropout1")
+    with tf.variable_scope("conv5"):
+        x = conv2d(x, 128, (3, 3), (1, 1))
+        x = tf.layers.batch_normalization(x)
+        x = tf.nn.relu(x)
+        x = tf.nn.dropout(x, keep_prob, name="dropout1")
 
+    with tf.variable_scope("conv6"):
+        x = conv2d(x, 128, (3, 3), (1, 1))
+        x = tf.layers.batch_normalization(x)
+        x = tf.nn.relu(x)
+        x = tf.nn.dropout(x, keep_prob, name="dropout1")
 
     # Apply a Flatten Layer
     # Function Definition from Above:
     #   flatten(x_tensor)
-    flatten1 = flatten(dropout1)
+    flatten1 = flatten(x)
     
     # Apply 1, 2, or 3 Fully Connected Layers
     #    Play around with different number of outputs
@@ -407,7 +412,7 @@ def build_cnn():
     keep_prob = neural_net_keep_prob_input()
 
     # Model
-    logits = resNet(x, resNet_block)
+    logits = conv_net(x, keep_prob)
     
     # Name logits Tensor, so that is can be loaded from disk after training
     logits = tf.identity(logits, name='logits')
@@ -454,8 +459,8 @@ def train_cnn_all_batches(epochs, batch_size, keep_probability):
 
     # Visualize graph and merge all the summaries
     merged = tf.summary.merge_all()
-    train_writer = tf.summary.FileWriter('../tmp/cifar/15' + '/train', sess.graph)
-    test_writer = tf.summary.FileWriter('../tmp/cifar/15' + '/test')
+    train_writer = tf.summary.FileWriter('../tmp/cifar/16' + '/train', sess.graph)
+    test_writer = tf.summary.FileWriter('../tmp/cifar/16' + '/test')
 
     # Initializing the variables
     sess.run(tf.global_variables_initializer())

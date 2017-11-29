@@ -174,7 +174,6 @@ def resNet_block(x_tensor, bottleneck_d, num_outputs, _strides = (1, 1), short_c
         
         x_tensor = tf.nn.relu(x_tensor)
         
-        print (x_tensor)
         return x_tensor 
 
 # https://arxiv.org/pdf/1512.03385.pdf
@@ -188,7 +187,7 @@ def resNet(image, resNet_block):
         image = tf.nn.relu(image)
     
     # Conv2
-    for i in range (9):
+    for i in range (18):
         with tf.variable_scope("conv2_%d" % (i + 1)):
             if i == 0:
                 # image = tf.nn.max_pool(image, ksize=[1, 3, 3, 1], strides= [1, 2, 2, 1], padding='SAME')
@@ -197,7 +196,7 @@ def resNet(image, resNet_block):
                 image = resNet_block(image, 16, 64)
 
     # Conv3
-    for i in range(9):
+    for i in range(18):
         with tf.variable_scope("conv3_%d" % (i + 1)):
             if i == 0:
                 image = resNet_block(image, 32, 128, _strides = (2, 2))
@@ -205,7 +204,7 @@ def resNet(image, resNet_block):
                 image = resNet_block(image, 32, 128)
     
     # Conv4
-    for i in range(9):
+    for i in range(18):
         with tf.variable_scope("conv4_%d" % (i + 1)):
             if i == 0:
                 image = resNet_block(image, 64, 256, _strides = (2, 2))
@@ -222,8 +221,8 @@ def resNet(image, resNet_block):
     """
     
     # Avg Pool
-    # image = tf.layers.batch_normalization(image)
-    # image = tf.nn.relu(image)
+    image = tf.layers.batch_normalization(image)
+    image = tf.nn.relu(image)
     image = avg_pool2d(image, (8, 8), (1, 1))
     
     # Reshape
@@ -232,7 +231,6 @@ def resNet(image, resNet_block):
     # FC
     image = fully_conn(image, 10)
 
-    print (image)
     return image
 
 def vgg_net(x, keep_prob):
@@ -314,34 +312,38 @@ def conv_net(x, keep_prob):
     #    conv2d_maxpool(x_tensor, conv_num_outputs, conv_ksize, conv_strides, pool_ksize, pool_strides)
     tf.summary.image('input', x)
 
-    convpool1 = conv2d_maxpool(x, 16, (3, 3), (1, 1), (3, 3), (2, 2), "conv1")
+    x = conv2d_maxpool(x, 64, (5, 5), (1, 1), (3, 3), (2, 2), "conv1")
+
+    x = tf.nn.lrn(x)
     
-    convpool2 = conv2d_maxpool(convpool1, 64, (5, 5), (1, 1), (3, 3), (2, 2), "conv2")
+    x = conv2d_maxpool(x, 64, (5, 5), (1, 1), (3, 3), (2, 2), "conv2")
+
+    x = tf.nn.lrn(x)
     
-    dropout1 = tf.nn.dropout(convpool2, keep_prob, name="dropout1")
+    x = tf.nn.dropout(x, keep_prob, name="dropout1")
     
     # Apply a Flatten Layer
     # Function Definition from Above:
     #   flatten(x_tensor)
-    flatten1 = flatten(dropout1)
+    x = flatten(x)
     
     # Apply 1, 2, or 3 Fully Connected Layers
     #    Play around with different number of outputs
     # Function Definition from Above:
     #   fully_conn(x_tensor, num_outputs)
-    fc1 = fully_conn(flatten1, 256, "fc1")
+    x = fully_conn(x, 384, "fc1")
 
-    dropout2 = tf.nn.dropout(fc1, keep_prob, name="dropout2")
+    # x = tf.nn.dropout(x, keep_prob, name="dropout2")
 
-    fc2 = fully_conn(dropout2, 256, "fc2")
+    x = fully_conn(x, 192, "fc2")
 
-    dropout3 = tf.nn.dropout(fc2, keep_prob, name="dropout3")
+    # x = tf.nn.dropout(x, keep_prob, name="dropout3")
     
     # Apply an Output Layer
     #    Set this to the number of classes
     # Function Definition from Above:
     #   output(x_tensor, num_outputs)
-    return output(dropout3, 10)
+    return output(x, 10)
 
 def train_neural_network(session, optimizer, keep_probability, feature_batch, label_batch, writer, merged_summary, i):
     """
@@ -369,7 +371,7 @@ def print_stats(session, feature_batch, label_batch, cost, accuracy):
     # Load the Preprocessed Validation data
     valid_features, valid_labels = pickle.load(open(helper.pickle_file_path('preprocess_validation.p'), mode='rb'))
 
-    loss = session.run(cost, feed_dict= {x:feature_batch, y:label_batch, keep_prob:1.0})
+    loss = session.run(cost, feed_dict= {x:feature_batch, y:label_batch, keep_prob: 1.0})
     valid_acc = session.run(accuracy, feed_dict= {x:valid_features, y:valid_labels, keep_prob: 1.0})
     print(loss)
     print(valid_acc)
@@ -412,7 +414,7 @@ def build_cnn():
     keep_prob = neural_net_keep_prob_input()
 
     # Model
-    logits = conv_net(x, keep_prob)
+    logits = resNet(x, resNet_block)
     
     # Name logits Tensor, so that is can be loaded from disk after training
     logits = tf.identity(logits, name='logits')
@@ -459,8 +461,8 @@ def train_cnn_all_batches(epochs, batch_size, keep_probability):
 
     # Visualize graph and merge all the summaries
     merged = tf.summary.merge_all()
-    train_writer = tf.summary.FileWriter('../tmp/cifar/16' + '/train', sess.graph)
-    test_writer = tf.summary.FileWriter('../tmp/cifar/16' + '/test')
+    train_writer = tf.summary.FileWriter('../tmp/cifar/24' + '/train', sess.graph)
+    test_writer = tf.summary.FileWriter('../tmp/cifar/24' + '/test')
 
     # Initializing the variables
     sess.run(tf.global_variables_initializer())
@@ -487,4 +489,4 @@ def train_cnn_all_batches(epochs, batch_size, keep_probability):
 # test_implementation()
 build_cnn()
 #train_cnn_single_batch(10, 256, 0.5)
-train_cnn_all_batches(20, 256, 0.5)
+train_cnn_all_batches(150, 256, 0.5)
